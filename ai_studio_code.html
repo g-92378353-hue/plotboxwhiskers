@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="ms" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEMAI Smart QR Cube: Box and Whisker Plot Explorer</title>
+    <!-- Tailwind CSS untuk reka bentuk moden & responsif -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome untuk ikonografi -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        /* Animasi Transisi Slaid */
+        .module-card {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        /* Animasi Berterusan Terapung */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between relative overflow-x-hidden">
+
+    <!-- Canvas untuk kesan Confetti -->
+    <canvas id="confetti-canvas" class="absolute inset-0 pointer-events-none z-50 w-full h-full"></canvas>
+
+    <!-- HEADER / PENGHARGAAN PEMBANGUN -->
+    <nav class="bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-slate-100 shadow-sm">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-blue-600 text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 animate-pulse">
+                    <i class="fa-solid fa-cube text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">SEMAI Smart QR Cube</h1>
+                    <span class="text-[10px] text-slate-500 block -mt-1">Inovator: Cikgu Anisah Farihah Binti Mustapha</span>
+                </div>
+            </div>
+            
+            <!-- Mata Ganjaran Global & Pilihan Nama -->
+            <div class="flex items-center space-x-3">
+                <div class="flex items-center space-x-1.5 bg-amber-50 border border-amber-200 text-amber-700 px-3 py-1.5 rounded-full shadow-sm">
+                    <i class="fa-solid fa-trophy text-xs"></i>
+                    <span id="global-score" class="font-extrabold text-xs sm:text-sm">0 XP</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- STATUS BAR PROGRES UTAMA (SEMAI CORE DESIGN) -->
+    <div class="max-w-4xl mx-auto w-full px-4 pt-6">
+        <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm space-y-3">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <span id="module-indicator" class="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">Modul 1: Nota Interaktif</span>
+                </div>
+                <span id="progress-percent" class="text-xs font-extrabold text-slate-500">0% Selesai</span>
+            </div>
+            
+            <!-- Bar Kemajuan Visual -->
+            <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                <div id="progress-bar-fill" class="bg-gradient-to-r from-blue-600 to-indigo-600 h-full w-[0%] transition-all duration-500"></div>
+            </div>
+
+            <!-- Panel Lencana (Badges) yang Berjaya Diaktifkan -->
+            <div class="flex items-center space-x-2 pt-1 border-t border-slate-50 overflow-x-auto">
+                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Lencana:</span>
+                <div id="badge-container" class="flex items-center space-x-1.5">
+                    <!-- Dinamik dimasukkan oleh JavaScript -->
+                    <span class="text-[10px] text-slate-400 italic">Belum ada lencana dinyahkunci</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- UTAMA: WIDGET PEMBANTU SUARA ENGLIS AI TEACHER (NARRATION PANEL) -->
+    <div class="max-w-4xl mx-auto w-full px-4 pt-4">
+        <div class="bg-slate-950 text-white p-4 rounded-2xl shadow-md border border-slate-800 space-y-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <span class="relative flex h-2.5 w-2.5">
+                        <span id="voice-ping" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span id="voice-dot" class="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                    </span>
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-blue-400">English AI Voice Tutor (Math Teacher)</span>
+                </div>
+                <span id="voice-status-badge" class="text-[9px] bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded-full font-bold">Speaking</span>
+            </div>
+            
+            <!-- Subtitle Penerangan -->
+            <p id="voice-subtitle" class="text-xs sm:text-sm text-slate-200 italic leading-relaxed">
+                "Hello! Let's explore statistics together."
+            </p>
+
+            <!-- Butang Kawalan Narator Suara -->
+            <div class="flex flex-wrap items-center gap-2 pt-1">
+                <button onclick="replayVoice()" class="bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1 shadow active:scale-95">
+                    <i class="fa-solid fa-play"></i> <span>Replay</span>
+                </button>
+                <button onclick="pauseVoice()" id="pause-voice-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1 active:scale-95">
+                    <i class="fa-solid fa-pause"></i> <span>Pause</span>
+                </button>
+                <button onclick="stopVoice()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1 active:scale-95">
+                    <i class="fa-solid fa-stop"></i> <span>Stop</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- KANDUNGAN DINAMIK MODUL (1 HINGGA 6) -->
+    <main class="max-w-4xl mx-auto w-full px-4 py-6 flex-grow">
+        
+        <!-- MODUL 1: NOTA INTERAKTIF -->
+        <div id="module-1" class="module-card bg-white p-5 sm:p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6">
+            <div class="flex items-center space-x-3">
+                <div class="bg-blue-100 text-blue-700 w-10 h-10 rounded-xl flex items-center justify-center text-lg"><i class="fa-solid fa-book"></i></div>
+                <div>
+                    <h2 class="font-extrabold text-lg sm:text-xl text-slate-900">Modul 1: Nota Interaktif <span class="text-xs text-blue-600 font-normal block sm:inline sm:ml-2">(Interactive Notes)</span></h2>
+                    <p class="text-xs text-slate-500">Kenali lima komponen utama Plot Box and Whisker.</p>
+                </div>
+            </div>
+
+            <!-- Plot Box SVG Interaktif -->
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col items-center justify-center">
+                <svg viewBox="0 0 500 180" class="w-full max-w-md h-auto">
+                    <!-- Whisker Kiri (Min ke Q1) -->
+                    <line x1="60" y1="90" x2="160" y2="90" stroke="#64748b" stroke-width="3" />
+                    <!-- Sempadan Min -->
+                    <line x1="60" y1="70" x2="60" y2="110" stroke="#64748b" stroke-width="4" stroke-linecap="round" />
+                    
+                    <!-- Kotak (Q1 ke Q3) -->
+                    <rect x="160" y="50" width="180" height="80" fill="#f1f5f9" stroke="#475569" stroke-width="3" />
+                    
+                    <!-- Sempadan Q1 -->
+                    <line x1="160" y1="50" x2="160" y2="130" stroke="#475569" stroke-width="4" />
+                    <!-- Median -->
+                    <line x1="240" y1="50" x2="240" y2="130" stroke="#2563eb" stroke-width="4" />
+                    <!-- Sempadan Q3 -->
+                    <line x1="340" y1="50" x2="340" y2="130" stroke="#475569" stroke-width="4" />
+                    
+                    <!-- Whisker Kanan (Q3 ke Max) -->
+                    <line x1="340" y1="90" x2="440" y2="90" stroke="#64748b" stroke-width="3" />
+                    <!-- Sempadan Max -->
+                    <line x1="440" y1="70" x2="440" y2="110" stroke="#64748b" stroke-width="4" stroke-linecap="round" />
+
+                    <!-- Butang Interaktif Klik pada SVG -->
+                    <circle cx="60" cy="90" r="12" fill="#ef4444" fill-opacity="0.2" stroke="#ef4444" stroke-width="2" class="cursor-pointer" onclick="showNoteDetail('min')" />
+                    <circle cx="160" cy="90" r="12" fill="#f59e0b" fill-opacity="0.2" stroke="#f59e0b" stroke-width="2" class="cursor-pointer" onclick="showNoteDetail('q1')" />
+                    <circle cx="240" cy="90" r="12" fill="#2563eb" fill-opacity="0.2" stroke="#2563eb" stroke-width="2" class="cursor-pointer" onclick="showNoteDetail('median')" />
+                    <circle cx="340" cy="90" r="12" fill="#10b981" fill-opacity="0.2" stroke="#10b981" stroke-width="2" class="cursor-pointer" onclick="showNoteDetail('q3')" />
+                    <circle cx="440" cy="90" r="12" fill="#8b5cf6" fill-opacity="0.2" stroke="#8b5cf6" stroke-width="2" class="cursor-pointer" onclick="showNoteDetail('max')" />
+                </svg>
+                <span class="text-[10px] text-slate-400 mt-2 font-bold uppercase"><i class="fa-solid fa-hand-pointer"></i> Sentuh bulatan warna di atas untuk membaca nota</span>
+            </div>
+
+            <!-- Maklumat Nota Dinamik -->
+            <div id="note-display" class="bg-blue-50 border border-blue-100 p-4 rounded-2xl">
+                <h4 class="font-bold text-sm text-blue-900 mb-1"><i class="fa-solid fa-circle-question"></i> Sila teroka komponen / Please explore components</h4>
+                <p class="text-xs text-blue-700 leading-relaxed">Klik mana-mana bahagian bulatan berwarna pada plot di atas untuk membaca huraian terperinci.</p>
+            </div>
+        </div>
+
+        <!-- MODUL 2: SIMULASI MEDIAN -->
+        <div id="module-2" class="module-card bg-white p-5 sm:p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6 hidden">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-100 text-indigo-700 w-10 h-10 rounded-xl flex items-center justify-center text-lg"><i class="fa-solid fa-chart-bar"></i></div>
+                <div>
+                    <h2 class="font-extrabold text-lg sm:text-xl text-slate-900">Modul 2: Simulasi Median <span class="text-xs text-blue-600 font-normal block sm:inline sm:ml-2">(Median Simulation)</span></h2>
+                    <p class="text-xs text-slate-500">Tentukan nilai tengah daripada set data terkumpul di bawah.</p>
+                </div>
+            </div>
+
+            <!-- Cabaran Praktikal Median -->
+            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-4">
+                <p class="text-xs sm:text-sm font-semibold text-slate-700">Diberi set data yang telah disusun seperti di bawah:</p>
+                
+                <!-- Set Data Tersusun -->
+                <div class="flex flex-wrap justify-center gap-2.5 my-3">
+                    <button onclick="checkMedianChoice(10, this)" class="median-opt bg-white border-2 border-slate-200 px-4 py-3 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100 transition">10</button>
+                    <button onclick="checkMedianChoice(12, this)" class="median-opt bg-white border-2 border-slate-200 px-4 py-3 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100 transition">12</button>
+                    <button onclick="checkMedianChoice(15, this)" class="median-opt bg-white border-2 border-slate-200 px-4 py-3 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100 transition">15</button>
+                    <button onclick="checkMedianChoice(18, this)" class="median-opt bg-white border-2 border-slate-200 px-4 py-3 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100 transition">18</button>
+                    <button onclick="checkMedianChoice(20, this)" class="median-opt bg-white border-2 border-slate-200 px-4 py-3 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100 transition">20</button>
+                    <button onclick="checkMedianChoice(22, this)" class="median-opt bg-white border-2 border-slate-200 px-4 py-3 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100 transition">22</button>
+                    <button onclick="checkMedianChoice(25, this)" class="median-opt bg-white border-2 border-slate-200 px-4 py-3 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100 transition">25</button>
+                </div>
+                
+                <p class="text-[11px] text-slate-400 italic text-center">*Sentuh butang nombor di atas untuk menentukan Median set data ini.</p>
+            </div>
+
+            <!-- Kotak Feedback Maklumbalas -->
+            <div id="median-feedback" class="hidden p-4 rounded-xl text-xs sm:text-sm font-semibold transition-all"></div>
+        </div>
+
+        <!-- MODUL 3: PERMAINAN Q1 -->
+        <div id="module-3" class="module-card bg-white p-5 sm:p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6 hidden">
+            <div class="flex items-center space-x-3">
+                <div class="bg-amber-100 text-amber-700 w-10 h-10 rounded-xl flex items-center justify-center text-lg"><i class="fa-solid fa-gamepad"></i></div>
+                <div>
+                    <h2 class="font-extrabold text-lg sm:text-xl text-slate-900">Modul 3: Permainan Q1 <span class="text-xs text-blue-600 font-normal block sm:inline sm:ml-2">(Q1 Game)</span></h2>
+                    <p class="text-xs text-slate-500">Cari nilai kuartil pertama (suku bawah) bagi data yang disediakan.</p>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-4">
+                <p class="text-xs sm:text-sm font-semibold text-slate-700">Diberi set data berikut. Kenal pasti dahulu separuh bahagian bawah (sebelum median) dan cari nilai median bagi bahagian tersebut:</p>
+                
+                <div class="flex justify-center flex-wrap gap-2.5 my-3">
+                    <button onclick="checkQ1Choice(5, this)" class="q1-opt bg-white border-2 border-slate-200 px-4 py-3 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100 transition">5</button>
+                    <button onclick="checkQ1Choice(8, this)" class="q1-opt bg-white border-2 border-slate-200 px-4 py-3 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100 transition">8</button>
+                    <button onclick="checkQ1Choice(12, this)" class="q1-opt bg-white border-2 border-slate-200 px-4 py-3 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100 transition">12</button>
+                    <span class="bg-blue-100 text-blue-800 px-4 py-3 rounded-xl font-bold text-sm flex items-center justify-center" title="Median">15 (M)</span>
+                    <button onclick="checkQ1Choice(20, this)" class="q1-opt bg-white border-2 border-slate-200 px-4 py-3 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100 transition" disabled>20</button>
+                    <button onclick="checkQ1Choice(25, this)" class="q1-opt bg-white border-2 border-slate-200 px-4 py-3 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100 transition" disabled>25</button>
+                    <button onclick="checkQ1Choice(30, this)" class="q1-opt bg-white border-2 border-slate-200 px-4 py-3 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100 transition" disabled>30</button>
+                </div>
+                <p class="text-[11px] text-slate-400 italic text-center">*Hanya separuh bahagian bawah (sebelum nilai Median 15) sahaja boleh dipilih!</p>
+            </div>
+
+            <!-- Kotak Feedback Maklumbalas -->
+            <div id="q1-feedback" class="hidden p-4 rounded-xl text-xs sm:text-sm font-semibold transition-all"></div>
+        </div>
+
+        <!-- MODUL 4: CABARAN Q3 -->
+        <div id="module-4" class="module-card bg-white p-5 sm:p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6 hidden">
+            <div class="flex items-center space-x-3">
+                <div class="bg-emerald-100 text-emerald-700 w-10 h-10 rounded-xl flex items-center justify-center text-lg"><i class="fa-solid fa-puzzle-piece"></i></div>
+                <div>
+                    <h2 class="font-extrabold text-lg sm:text-xl text-slate-900">Modul 4: Cabaran Q3 <span class="text-xs text-blue-600 font-normal block sm:inline sm:ml-2">(Q3 Challenge)</span></h2>
+                    <p class="text-xs text-slate-500">Cari nilai kuartil ketiga (suku atas) bagi set data di bawah.</p>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-4">
+                <p class="text-xs sm:text-sm font-semibold text-slate-700">Diberi set data berikut. Kenal pasti dahulu separuh bahagian atas (selepas median) dan cari nilai median bagi bahagian tersebut:</p>
+                
+                <div class="flex justify-center flex-wrap gap-2.5 my-3">
+                    <button onclick="checkQ3Choice(10, this)" class="q3-opt bg-white border-2 border-slate-200 px-4 py-3 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100 transition" disabled>10</button>
+                    <button onclick="checkQ3Choice(15, this)" class="q3-opt bg-white border-2 border-slate-200 px-4 py-3 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100 transition" disabled>15</button>
+                    <button onclick="checkQ3Choice(20, this)" class="q3-opt bg-white border-2 border-slate-200 px-4 py-3 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100 transition" disabled>20</button>
+                    <span class="bg-blue-100 text-blue-800 px-4 py-3 rounded-xl font-bold text-sm flex items-center justify-center" title="Median">25 (M)</span>
+                    <button onclick="checkQ3Choice(30, this)" class="q3-opt bg-white border-2 border-slate-200 px-4 py-3 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100 transition">30</button>
+                    <button onclick="checkQ3Choice(35, this)" class="q3-opt bg-white border-2 border-slate-200 px-4 py-3 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100 transition">35</button>
+                    <button onclick="checkQ3Choice(40, this)" class="q3-opt bg-white border-2 border-slate-200 px-4 py-3 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100 transition">40</button>
+                </div>
+                <p class="text-[11px] text-slate-400 italic text-center">*Hanya separuh bahagian atas (selepas nilai Median 25) sahaja boleh dipilih!</p>
+            </div>
+
+            <!-- Kotak Feedback Maklumbalas -->
+            <div id="q3-feedback" class="hidden p-4 rounded-xl text-xs sm:text-sm font-semibold transition-all"></div>
+        </div>
+
+        <!-- MODUL 5: OUTLIER EXPLORER -->
+        <div id="module-5" class="module-card bg-white p-5 sm:p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6 hidden">
+            <div class="flex items-center space-x-3">
+                <div class="bg-purple-100 text-purple-700 w-10 h-10 rounded-xl flex items-center justify-center text-lg"><i class="fa-solid fa-eye"></i></div>
+                <div>
+                    <h2 class="font-extrabold text-lg sm:text-xl text-slate-900">Modul 5: Outlier Explorer</h2>
+                    <p class="text-xs text-slate-500">Kesan nilai luar biasa (pencilan) menggunakan julat antara kuartil (IQR).</p>
+                </div>
+            </div>
+
+            <!-- Kad Pengiraan Outlier -->
+            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-4">
+                <div class="p-3 bg-white rounded-xl border border-slate-100 space-y-1 text-xs">
+                    <p><strong>Formulanya (Formula):</strong></p>
+                    <p>• Julat Antara Kuartil (IQR) = Q3 - Q1 = 35 - 15 = <strong>20</strong></p>
+                    <p>• Had Sempadan Bawah (Lower Bound) = Q1 - (1.5 × IQR) = 15 - (30) = <strong>-15</strong></p>
+                    <p>• Had Sempadan Atas (Upper Bound) = Q3 + (1.5 × IQR) = 35 + (30) = <strong>65</strong></p>
+                </div>
+
+                <p class="text-xs sm:text-sm font-bold text-slate-700">Tentukan nombor manakah di bawah yang dikategorikan sebagai pencilan (outliers):</p>
+                
+                <div class="flex justify-center flex-wrap gap-2.5 my-2">
+                    <button onclick="toggleOutlierSelection(-20, this)" class="outlier-btn bg-white border-2 border-slate-200 px-4 py-3 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100 transition">-20</button>
+                    <button onclick="toggleOutlierSelection(10, this)" class="outlier-btn bg-white border-2 border-slate-200 px-4 py-3 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100 transition">10</button>
+                    <button onclick="toggleOutlierSelection(20, this)" class="outlier-btn bg-white border-2 border-slate-200 px-4 py-3 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100 transition">20</button>
+                    <button onclick="toggleOutlierSelection(30, this)" class="outlier-btn bg-white border-2 border-slate-200 px-4 py-3 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100 transition">30</button>
+                    <button onclick="toggleOutlierSelection(40, this)" class="outlier-btn bg-white border-2 border-slate-200 px-4 py-3 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100 transition">40</button>
+                    <button onclick="toggleOutlierSelection(50, this)" class="outlier-btn bg-white border-2 border-slate-200 px-4 py-3 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100 transition">50</button>
+                    <button onclick="toggleOutlierSelection(70, this)" class="outlier-btn bg-white border-2 border-slate-200 px-4 py-3 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100 transition">70</button>
+                </div>
+                
+                <div class="text-center pt-2">
+                    <button onclick="verifyOutliers()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition shadow">Sahkan Pilihan Pencilan (Confirm Outliers)</button>
+                </div>
+            </div>
+
+            <!-- Kotak Feedback Maklumbalas -->
+            <div id="outlier-feedback" class="hidden p-4 rounded-xl text-xs sm:text-sm font-semibold transition-all"></div>
+        </div>
+
+        <!-- MODUL 6: KUIZ AKHIR & SIJIL -->
+        <div id="module-6" class="module-card bg-white p-5 sm:p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6 hidden">
+            <div class="flex items-center space-x-3">
+                <div class="bg-red-100 text-red-700 w-10 h-10 rounded-xl flex items-center justify-center text-lg"><i class="fa-solid fa-graduation-cap"></i></div>
+                <div>
+                    <h2 class="font-extrabold text-lg sm:text-xl text-slate-900">Modul 6: Kuiz Akhir <span class="text-xs text-blue-600 font-normal block sm:inline sm:ml-2">(Final Quiz & Certificate)</span></h2>
+                    <p class="text-xs text-slate-500">Tunjukkan kehebatan anda untuk mendapatkan sijil pencapaian.</p>
+                </div>
+            </div>
+
+            <!-- Kemasukan Nama Pelajar untuk Sijil -->
+            <div id="name-input-panel" class="bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-4">
+                <p class="text-xs sm:text-sm font-bold text-slate-700">Sila masukkan nama penuh anda untuk pendaftaran sijil:</p>
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <input id="student-name-field" type="text" placeholder="Contoh: Muhammad Ali" class="flex-grow px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-blue-500 transition">
+                    <button onclick="saveStudentName()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 rounded-xl text-sm transition">Daftar Nama (Register Name)</button>
+                </div>
+            </div>
+
+            <!-- Panel Paparan Soalan Kuiz -->
+            <div id="quiz-question-panel" class="hidden bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-4">
+                <div class="flex justify-between items-center text-xs font-bold text-slate-500">
+                    <span id="quiz-question-index">Soalan 1 daripada 5</span>
+                    <span id="quiz-question-score">Mata: 0/5</span>
+                </div>
+                <p id="quiz-question-text" class="text-sm font-bold text-slate-800 leading-relaxed">Sila daftar nama dahulu...</p>
+                
+                <div class="grid grid-cols-1 gap-2.5 pt-2" id="quiz-options-container">
+                    <!-- Dinamik dimasukkan oleh JavaScript -->
+                </div>
+
+                <div id="quiz-individual-feedback" class="hidden p-3.5 rounded-xl text-xs font-semibold"></div>
+            </div>
+
+            <!-- Panel Sijil Selesai -->
+            <div id="certificate-panel" class="hidden space-y-6">
+                <div class="bg-gradient-to-br from-amber-50 to-orange-50 p-6 sm:p-10 rounded-3xl border-4 border-amber-200 text-center space-y-6 relative shadow-md">
+                    <div class="absolute top-4 right-4 text-amber-500 text-4xl opacity-20"><i class="fa-solid fa-ribbon"></i></div>
+                    
+                    <span class="text-xs font-extrabold uppercase tracking-widest text-amber-600 bg-amber-100 px-3.5 py-1.5 rounded-full">Sijil Pencapaian Digital </span>
+                    
+                    <h3 class="text-2xl sm:text-3xl font-extrabold text-slate-900 font-serif">SEMAI Smart QR Cube</h3>
+                    <p class="text-xs sm:text-sm text-slate-600 max-w-md mx-auto">Sijil ini dianugerahkan kepada murid di bawah kerana menunjukkan kecemerlangan dalam penguasaan Plot Box and Whisker:</p>
+                    
+                    <p id="cert-name" class="text-xl sm:text-2xl font-extrabold text-blue-900 underline decoration-amber-500 decoration-wavy py-2 font-serif">NAMA MURID</p>
+                    
+                    <div class="border-t border-amber-200/50 pt-4 max-w-xs mx-auto">
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Inovator Pengesah:</p>
+                        <p class="text-xs font-extrabold text-slate-800">Cikgu Anisah Farihah Binti Mustapha</p>
+                        <p class="text-[9px] text-slate-400">Google Certificate Trainer</p>
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <button onclick="window.print()" class="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-6 py-3 rounded-xl transition inline-flex items-center space-x-2">
+                        <i class="fa-solid fa-print"></i>
+                        <span>Cetak Sijil Anda (Print Certificate)</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- KAWALAN DI BAWAH (NAVIGATION BUTTONS) -->
+    <footer class="bg-white border-t border-slate-100 sticky bottom-0 z-40 py-4 shadow-lg">
+        <div class="max-w-4xl mx-auto px-4 flex justify-between items-center gap-3">
+            <button id="btn-back" onclick="changeModule(-1)" class="flex-1 sm:flex-initial bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm px-4 py-3 rounded-xl transition inline-flex items-center justify-center space-x-1.5 active:scale-95">
+                <i class="fa-solid fa-chevron-left"></i>
+                <span>Kembali</span>
+            </button>
+            <button id="btn-next" onclick="changeModule(1)" class="flex-grow sm:flex-initial bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm px-6 py-3 rounded-xl transition inline-flex items-center justify-center space-x-1.5 active:scale-95 shadow-md shadow-blue-500/20">
+                <span>Seterusnya</span>
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+        </div>
+    </footer>
+
+    <!-- LOGIK ATUR CARA JAVASCRIPT (SEMAI PEDAGOGY ENGINE) -->
+    <script>
+        // Penjejak state kemajuan global
+        let appState = {
+            currentModule: 1,
+            score: 0,
+            unlockedBadges: [],
+            studentName: '',
+            noteClicks: { min: false, q1: false, median: false, q3: false, max: false },
+            isMedianSolved: false,
+            isQ1Solved: false,
+            isQ3Solved: false,
+            isOutlierSolved: false,
+            quizCompleted: false
+        };
+
+        // Narator Suara Guru Bahasa Inggeris (Friendly Math Teacher Narration Scripts)
+        const moduleSpeeches = {
+            1: "Hello there, and welcome to Module One! Let's explore the wonderful world of Box and Whisker Plots. Together, we'll learn about the five key components. Please tap on each of the colored circles on the plot below to discover their definitions.",
+            2: "Wonderful! Welcome to Module Two, all about finding the Median. The median is our true middle value, splitting a sorted data set exactly in half. Look at this sorted list of seven numbers. Can you find and click on the number that represents the median?",
+            3: "Fantastic job! Now, welcome to Module Three, the First Quartile Game. The first quartile, or Q1, is simply the median of the lower half of our data set. Take a look at the numbers below the median, and select the correct middle value.",
+            4: "Sensational effort! Welcome to Module Four, the Third Quartile Challenge. The third quartile, or Q3, is the median of the upper half of our data set. Look at the numbers above the median, and identify the correct value.",
+            5: "Excellent! Welcome to Module Five, the Outlier Explorer. Outliers are extreme values that lie beyond our calculated upper and lower bounds using the Interquartile Range. Can you spot and click on the outliers in the list below?",
+            6: "Awesome work! You have reached the Final Module. Please register your full name first, then complete our simple five-question quiz to earn your official digital certificate."
+        };
+
+        // Teks Huraian bagi komponen Modul 1 (English Teacher Narrations)
+        const noteDetails = {
+            min: {
+                title: "Nilai Minimum (Minimum)",
+                desc: "Nilai terkecil dalam data yang tidak dikira sebagai pencilan (outlier). Kedudukannya adalah di hujung sekali garisan sebelah kiri.",
+                speech: "The minimum value represents the smallest data point in our set that is not considered an extreme outlier. You can find it at the very tip of the left whisker."
+            },
+            q1: {
+                title: "Kuartil Pertama (Q1 / First Quartile)",
+                desc: "Sempadan 25% data pertama. Membentuk garisan menegak penutup kiri kotak.",
+                speech: "The first quartile, or sukuan bawah, represents the twenty-five percent mark of our data, forming the left vertical boundary of the main box."
+            },
+            median: {
+                title: "Median (Q2)",
+                desc: "Nilai penengah (50% data). Diwakili oleh garisan penegas tebal biru di dalam kotak.",
+                speech: "The median is our true middle value, splitting the sorted data set exactly in half. It is shown as a blue line inside the box."
+            },
+            q3: {
+                title: "Kuartil Ketiga (Q3 / Third Quartile)",
+                desc: "Sempadan 75% data pertama. Membentuk garisan menegak penutup kanan kotak.",
+                speech: "The third quartile, or sukuan atas, represents the seventy-five percent mark of our data, forming the right vertical boundary of the box."
+            },
+            max: {
+                title: "Nilai Maksimum (Maximum)",
+                desc: "Nilai terbesar dalam data yang tidak dikira sebagai pencilan. Kedudukannya adalah di hujung sekali garisan sebelah kanan.",
+                speech: "The maximum value represents the largest data point in our set that is not an extreme outlier. You can find it at the very tip of the right whisker."
+            }
+        };
+
+        // Data Kuiz Akhir (Modul 6)
+        const quizQuestions = [
+            {
+                q: "Which of the following is one of the five key components of a Box and Whisker plot?",
+                opts: ["Range", "First Quartile (Q1)", "Mean"],
+                ans: 1,
+                hint: "Think about the five-number summary that builds the boundaries of the plot."
+            },
+            {
+                q: "How do you calculate the Interquartile Range, also known as IQR?",
+                opts: ["Q3 - Q1", "Q3 + Q1", "Maximum - Minimum"],
+                ans: 0,
+                hint: "The IQR represents the width of the main box, which is the difference between the third and first quartiles."
+            },
+            {
+                q: "What percentage of data is split exactly by the Median?",
+                opts: ["25 percent of the data", "50 percent of the data", "75 percent of the data"],
+                ans: 1,
+                hint: "The median is the exact middle point of the sorted data set."
+            },
+            {
+                q: "If a data point lies far beyond the upper boundary, it is classified as a what?",
+                opts: ["Median", "Main Box", "Outlier"],
+                ans: 2,
+                hint: "An extreme data point that lies far outside the typical range is called an outlier."
+            },
+            {
+                q: "Which formula is used to calculate the upper boundary for outliers?",
+                opts: ["Q3 + 1.5 times the IQR", "Q1 - 1.5 times the IQR", "Q3 - 1.5 times the IQR"],
+                ans: 0,
+                hint: "To find the upper limit, we add one point five times the IQR to our third quartile."
+            }
+        ];
+
+        let currentQuizIndex = 0;
+        let quizScore = 0;
+        let selectedOutliers = [];
+        let speechSynth = window.speechSynthesis;
+        let lastSpokenText = "";
+        let isVoicePaused = false;
+
+        // Inisialisasi Apabila Aplikasi Dimulakan
+        window.onload = function() {
+            loadSavedState();
+            renderBadges();
+            updateProgressUI();
+            
+            // Pengendalian dinamik sekiranya pemuatan suara memerlukan masa (terutamanya pada Chrome)
+            if (speechSynth.onvoiceschanged !== undefined) {
+                speechSynth.onvoiceschanged = () => {
+                    executeSpeech(moduleSpeeches[appState.currentModule]);
+                };
+            } else {
+                executeSpeech(moduleSpeeches[appState.currentModule]);
+            }
+        };
+
+        // Memuatkan progress daripada Local Storage
+        function loadSavedState() {
+            const savedData = localStorage.getItem('semai_smart_qr_cube');
+            if (savedData) {
+                appState = JSON.parse(savedData);
+            }
+        }
+
+        // Menyimpan progress semasa ke Local Storage
+        function saveState() {
+            localStorage.setItem('semai_smart_qr_cube', JSON.stringify(appState));
+        }
+
+        // Pengurusan Pertukaran Modul Aktif
+        function changeModule(direction) {
+            triggerSynthSound('click');
+            const targetModule = appState.currentModule + direction;
+
+            // Pastikan modul berada dalam lingkungan 1 hingga 6
+            if (targetModule < 1 || targetModule > 6) return;
+
+            // Halangan bersyarat jika modul belum diselesaikan
+            if (direction > 0) {
+                if (appState.currentModule === 1 && !isModule1Finished()) {
+                    alert("Sila sentuh semua 5 komponen pada rajah untuk membuka kunci!");
+                    return;
+                }
+                if (appState.currentModule === 2 && !appState.isMedianSolved) {
+                    alert("Sila selesaikan cabaran mencari median terlebih dahulu!");
+                    return;
+                }
+                if (appState.currentModule === 3 && !appState.isQ1Solved) {
+                    alert("Sila cari nilai Q1 yang betul dahulu!");
+                    return;
+                }
+                if (appState.currentModule === 4 && !appState.isQ3Solved) {
+                    alert("Sila cari nilai Q3 yang betul dahulu!");
+                    return;
+                }
+                if (appState.currentModule === 5 && !appState.isOutlierSolved) {
+                    alert("Sila selesaikan analisis pencilan dahulu!");
+                    return;
+                }
+            }
+
+            // Kemas kini state modul
+            appState.currentModule = targetModule;
+            saveState();
+
+            // Render antaramuka modul
+            renderActiveModule();
+            updateProgressUI();
+            
+            // Mainkan penerangan audio suara bagi modul baru secara automatik
+            executeSpeech(moduleSpeeches[appState.currentModule]);
+        }
+
+        // Paparkan Modul yang Sedang Aktif
+        function renderActiveModule() {
+            for (let i = 1; i <= 6; i++) {
+                document.getElementById(`module-${i}`).classList.add('hidden');
+            }
+            document.getElementById(`module-${appState.currentModule}`).classList.remove('hidden');
+
+            // Kawalan keterlihatan butang navigasi
+            document.getElementById('btn-back').style.visibility = appState.currentModule === 1 ? 'hidden' : 'visible';
+            document.getElementById('btn-next').style.visibility = appState.currentModule === 6 ? 'hidden' : 'visible';
+
+            // Bersihkan keadaan kuiz jika kembali ke modul 6
+            if (appState.currentModule === 6) {
+                setupFinalQuiz();
+            }
+        }
+
+        // Segerakkan Progres, Poin, dan Lencana pada UI
+        function updateProgressUI() {
+            const progressPct = Math.round(((appState.currentModule - 1) / 5) * 100);
+            document.getElementById('progress-percent').innerText = `${progressPct}% Selesai`;
+            document.getElementById('progress-bar-fill').style.width = `${progressPct}%`;
+            document.getElementById('global-score').innerText = `${appState.score} XP`;
+
+            // Kemas kini penanda tajuk modul semasa
+            const moduleTitles = [
+                "Modul 1: Nota Interaktif",
+                "Modul 2: Simulasi Median",
+                "Modul 3: Permainan Q1",
+                "Modul 4: Cabaran Q3",
+                "Modul 5: Outlier Explorer",
+                "Modul 6: Kuiz Akhir & Sijil"
+            ];
+            document.getElementById('module-indicator').innerText = moduleTitles[appState.currentModule - 1];
+            renderBadges();
+        }
+
+        // Menguruskan Penyandaran & Penjanaan Lencana Visual
+        function renderBadges() {
+            const container = document.getElementById('badge-container');
+            container.innerHTML = '';
+
+            if (appState.unlockedBadges.length === 0) {
+                container.innerHTML = `<span class="text-[10px] text-slate-400 italic">Belum ada lencana dinyahkunci</span>`;
+                return;
+            }
+
+            const badgeIcons = {
+                nota: { icon: "fa-book", text: "Nota Champion", color: "bg-blue-100 text-blue-700 border-blue-200" },
+                median: { icon: "fa-chart-bar", text: "Median Master", color: "bg-indigo-100 text-indigo-700 border-indigo-200" },
+                q1: { icon: "fa-gamepad", text: "Q1 Scout", color: "bg-amber-100 text-amber-700 border-amber-200" },
+                q3: { icon: "fa-puzzle-piece", text: "Q3 Conqueror", color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
+                outlier: { icon: "fa-eye", text: "Outlier Detective", color: "bg-purple-100 text-purple-700 border-purple-200" },
+                kuiz: { icon: "fa-graduation-cap", text: "Statistik Elite", color: "bg-red-100 text-red-700 border-red-200" }
+            };
+
+            appState.unlockedBadges.forEach(badgeKey => {
+                const info = badgeIcons[badgeKey];
+                if (info) {
+                    container.innerHTML += `
+                        <span class="flex items-center space-x-1 text-[10px] font-bold px-2 py-0.5 rounded-md border ${info.color}">
+                            <i class="fa-solid ${info.icon}"></i>
+                            <span>${info.text}</span>
+                        </span>
+                    `;
+                }
+            });
+        }
+
+        // Menambah Lencana Baharu ke dalam State
+        function unlockBadge(badgeKey) {
+            if (!appState.unlockedBadges.includes(badgeKey)) {
+                appState.unlockedBadges.push(badgeKey);
+                saveState();
+                renderBadges();
+                triggerConfetti();
+            }
+        }
+
+        // ENJIN PEMILIHAN SUARA PEREMPUAN BAHASA INGGERIS TERBAIK & INTEGRASI PANDUAN SUARA
+        function selectBestFemaleEnglishVoice() {
+            if (!speechSynth) return null;
+            const voices = speechSynth.getVoices();
+
+            // Corak keutamaan pencarian suara yang ditetapkan
+            const voicePriorityList = [
+                "Google UK English Female",
+                "Google US English Female",
+                "Microsoft Aria",
+                "Microsoft Jenny",
+                "en-GB", // Sandaran am UK
+                "en-US"  // Sandaran am US
+            ];
+
+            // 1. Imbas keutamaan mengikut penamaan suara spesifik
+            for (let namePattern of voicePriorityList) {
+                let matchedVoice = voices.find(v => v.name.toLowerCase().includes(namePattern.toLowerCase()));
+                if (matchedVoice) return matchedVoice;
+            }
+
+            // 2. Jika tiada nama khusus, cari sebarang suara perempuan berpenanda en (English)
+            let anyFemaleEnglish = voices.find(v => v.lang.startsWith('en') && v.name.toLowerCase().includes('female'));
+            if (anyFemaleEnglish) return anyFemaleEnglish;
+
+            // 3. Sandaran terakhir kepada sebarang suara Bahasa Inggeris
+            let anyEnglishVoice = voices.find(v => v.lang.startsWith('en'));
+            if (anyEnglishVoice) return anyEnglishVoice;
+
+            return null;
+        }
+
+        // Memulakan bacaan narasi suara AI Bahasa Inggeris
+        function executeSpeech(phrase) {
+            if (!speechSynth) return;
+            speechSynth.cancel(); // Hentikan audio sedia ada sebelum bermula
+            isVoicePaused = false;
+            
+            // Set semula teks pada butang kawalan jeda
+            document.getElementById('pause-voice-btn').innerHTML = `<i class="fa-solid fa-pause"></i> <span>Pause</span>`;
+            updateVoiceStatusIndicators('speaking');
+
+            const utterance = new SpeechSynthesisUtterance(phrase);
+            lastSpokenText = phrase;
+
+            // Pilih suara guru perempuan terbaik
+            const femaleVoice = selectBestFemaleEnglishVoice();
+            if (femaleVoice) {
+                utterance.voice = femaleVoice;
+            }
+            
+            // Tetapan konfigurasi suara mesra yang diminta
+            utterance.lang = 'en-US';
+            utterance.rate = 0.9;
+            utterance.pitch = 1.1;
+            utterance.volume = 1.0;
+
+            // Pengendalian penunjuk status apabila audio selesai
+            utterance.onend = function() {
+                updateVoiceStatusIndicators('stopped');
+            };
+            utterance.onerror = function() {
+                updateVoiceStatusIndicators('stopped');
+            };
+
+            // Kemas kini paparan sarikata (Subtitle)
+            document.getElementById('voice-subtitle').innerText = `"${phrase}"`;
+            speechSynth.speak(utterance);
+        }
+
+        // BUTANG: Main semula audio modul semasa (Replay)
+        function replayVoice() {
+            triggerSynthSound('click');
+            if (lastSpokenText) {
+                executeSpeech(lastSpokenText);
+            } else {
+                executeSpeech(moduleSpeeches[appState.currentModule]);
+            }
+        }
+
+        // BUTANG: Jeda / Sambung semula audio (Pause/Resume)
+        function pauseVoice() {
+            triggerSynthSound('click');
+            if (!speechSynth) return;
+
+            const pauseBtn = document.getElementById('pause-voice-btn');
+            if (speechSynth.speaking) {
+                if (speechSynth.paused) {
+                    speechSynth.resume();
+                    isVoicePaused = false;
+                    pauseBtn.innerHTML = `<i class="fa-solid fa-pause"></i> <span>Pause</span>`;
+                    updateVoiceStatusIndicators('speaking');
+                } else {
+                    speechSynth.pause();
+                    isVoicePaused = true;
+                    pauseBtn.innerHTML = `<i class="fa-solid fa-play"></i> <span>Resume</span>`;
+                    updateVoiceStatusIndicators('paused');
+                }
+            }
+        }
+
+        // BUTANG: Berhentikan audio sepenuhnya (Stop)
+        function stopVoice() {
+            triggerSynthSound('click');
+            if (!speechSynth) return;
+            speechSynth.cancel();
+            isVoicePaused = false;
+            
+            // Set semula status paparan
+            document.getElementById('pause-voice-btn').innerHTML = `<i class="fa-solid fa-pause"></i> <span>Pause</span>`;
+            updateVoiceStatusIndicators('stopped');
+        }
+
+        // Kemas kini visual penunjuk status audio
+        function updateVoiceStatusIndicators(state) {
+            const dot = document.getElementById('voice-dot');
+            const ping = document.getElementById('voice-ping');
+            const statusBadge = document.getElementById('voice-status-badge');
+            
+            if (state === 'speaking') {
+                dot.className = "relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500";
+                ping.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75";
+                statusBadge.innerText = "Speaking";
+                statusBadge.className = "text-[9px] bg-green-950/50 text-green-300 px-2 py-0.5 rounded-full font-bold";
+            } else if (state === 'paused') {
+                dot.className = "relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500";
+                ping.className = "hidden";
+                statusBadge.innerText = "Paused";
+                statusBadge.className = "text-[9px] bg-amber-950/50 text-amber-300 px-2 py-0.5 rounded-full font-bold";
+            } else {
+                dot.className = "relative inline-flex rounded-full h-2.5 w-2.5 bg-slate-500";
+                ping.className = "hidden";
+                statusBadge.innerText = "Stopped";
+                statusBadge.className = "text-[9px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-bold";
+            }
+        }
+
+        // MODUL 1: Memaparkan Maklumat Nota Terperinci
+        function showNoteDetail(key) {
+            triggerSynthSound('click');
+            const detail = noteDetails[key];
+            if (!detail) return;
+
+            // Kemas kini paparan nota dinamik (Dwi-Bahasa)
+            const noteDisplay = document.getElementById('note-display');
+            noteDisplay.innerHTML = `
+                <h4 class="font-bold text-sm text-blue-900 mb-1"><i class="fa-solid fa-circle-info"></i> ${detail.title}</h4>
+                <p class="text-xs text-blue-700 leading-relaxed">${detail.desc}</p>
+            `;
+
+            // Rekod klik untuk kelayakan selesaikan modul
+            appState.noteClicks[key] = true;
+            saveState();
+
+            // Mainkan penerangan suara khusus komponen
+            executeSpeech(detail.speech);
+
+            // Semak jika semua bulatan telah disentuh sekurang-kurangnya sekali
+            if (isModule1Finished()) {
+                unlockBadge('nota');
+                if (appState.score < 10) {
+                    appState.score = 10;
+                    saveState();
+                    updateProgressUI();
+                }
+            }
+        }
+
+        function isModule1Finished() {
+            return Object.values(appState.noteClicks).every(val => val === true);
+        }
+
+        // MODUL 2: Menilai Jawapan Pilihan Median
+        function checkMedianChoice(value, element) {
+            const feedback = document.getElementById('median-feedback');
+            feedback.classList.remove('hidden');
+
+            if (value === 18) {
+                triggerSynthSound('success');
+                feedback.className = "p-4 rounded-xl text-xs sm:text-sm font-semibold bg-green-50 text-green-800 border border-green-200";
+                feedback.innerHTML = `
+                    <div class="flex items-start space-x-2">
+                        <i class="fa-solid fa-circle-check text-green-600 mt-0.5"></i>
+                        <span>Betul! 18 ialah Median kerana ia merupakan nombor tepat di kedudukan tengah set data yang tersusun ini. (+10 XP)</span>
+                    </div>
+                `;
+                appState.isMedianSolved = true;
+                if (appState.score < 20) {
+                    appState.score = 20;
+                }
+                unlockBadge('median');
+                saveState();
+                updateProgressUI();
+                executeSpeech("That is correct! Eighteen is the median because it is the exact middle value of our sorted data set. Well done!");
+            } else {
+                triggerSynthSound('fail');
+                feedback.className = "p-4 rounded-xl text-xs sm:text-sm font-semibold bg-red-50 text-red-800 border border-red-200";
+                feedback.innerHTML = `
+                    <div class="flex items-start space-x-2">
+                        <i class="fa-solid fa-circle-exclamation text-red-600 mt-0.5"></i>
+                        <span>Pembayang: Susun semua nombor dan cari yang berada di kedudukan ke-4 (tengah). Nombor ${value} bukan penengah tepat.</span>
+                    </div>
+                `;
+                executeSpeech("That is incorrect. Remember, the median is the value located exactly in the middle of our sorted list. Try again!");
+            }
+        }
+
+        // MODUL 3: Menilai Jawapan Suku Pertama (Q1)
+        function checkQ1Choice(value, element) {
+            const feedback = document.getElementById('q1-feedback');
+            feedback.classList.remove('hidden');
+
+            if (value === 8) {
+                triggerSynthSound('success');
+                feedback.className = "p-4 rounded-xl text-xs sm:text-sm font-semibold bg-green-50 text-green-800 border border-green-200";
+                feedback.innerHTML = `
+                    <div class="flex items-start space-x-2">
+                        <i class="fa-solid fa-circle-check text-green-600 mt-0.5"></i>
+                        <span>Tahniah, betul! Bahagian bawah data ialah (5, 8, 12). Median bagi subset tersebut ialah 8. (+10 XP)</span>
+                    </div>
+                `;
+                appState.isQ1Solved = true;
+                if (appState.score < 30) {
+                    appState.score = 30;
+                }
+                unlockBadge('q1');
+                saveState();
+                updateProgressUI();
+                executeSpeech("Spot on! Eight is indeed the first quartile, because it is the middle value of the lower half of our data. Brilliant!");
+            } else {
+                triggerSynthSound('fail');
+                feedback.className = "p-4 rounded-xl text-xs sm:text-sm font-semibold bg-red-50 text-red-800 border border-red-200";
+                feedback.innerHTML = `
+                    <div class="flex items-start space-x-2">
+                        <i class="fa-solid fa-circle-exclamation text-red-600 mt-0.5"></i>
+                        <span>Pembayang: Separuh data bawah sebelum median 15 adalah 5, 8, dan 12. Cari nilai yang berada di tengah kumpulan kecil ini.</span>
+                    </div>
+                `;
+                executeSpeech("Not quite. Focus on the lower half of the data set, which contains five, eight, and twelve, and find its middle point.");
+            }
+        }
+
+        // MODUL 4: Menilai Jawapan Suku Ketiga (Q3)
+        function checkQ3Choice(value, element) {
+            const feedback = document.getElementById('q3-feedback');
+            feedback.classList.remove('hidden');
+
+            if (value === 35) {
+                triggerSynthSound('success');
+                feedback.className = "p-4 rounded-xl text-xs sm:text-sm font-semibold bg-green-50 text-green-800 border border-green-200";
+                feedback.innerHTML = `
+                    <div class="flex items-start space-x-2">
+                        <i class="fa-solid fa-circle-check text-green-600 mt-0.5"></i>
+                        <span>Betul! Separuh data atas selepas median 25 ialah (30, 35, 40). Median bagi subset tersebut ialah 35. (+10 XP)</span>
+                    </div>
+                `;
+                appState.isQ3Solved = true;
+                if (appState.score < 40) {
+                    appState.score = 40;
+                }
+                unlockBadge('q3');
+                saveState();
+                updateProgressUI();
+                executeSpeech("Amazing! Thirty-five is correct. It is the middle value of our upper half data, which consists of thirty, thirty-five, and forty.");
+            } else {
+                triggerSynthSound('fail');
+                feedback.className = "p-4 rounded-xl text-xs sm:text-sm font-semibold bg-red-50 text-red-800 border border-red-200";
+                feedback.innerHTML = `
+                    <div class="flex items-start space-x-2">
+                        <i class="fa-solid fa-circle-exclamation text-red-600 mt-0.5"></i>
+                        <span>Pembayang: Separuh bahagian atas selepas median 25 adalah 30, 35, dan 40. Sila tentukan penengahnya.</span>
+                    </div>
+                `;
+                executeSpeech("Try again! Sila cari nilai tengah bagi kumpulan kecil separuh bahagian atas.");
+            }
+        }
+
+        // MODUL 5: Menguruskan Pemilihan Outliers (Pencilan)
+        function toggleOutlierSelection(value, element) {
+            triggerSynthSound('click');
+            const idx = selectedOutliers.indexOf(value);
+            if (idx > -1) {
+                selectedOutliers.splice(idx, 1);
+                element.className = "outlier-btn bg-white border-2 border-slate-200 px-4 py-3 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-100 transition";
+            } else {
+                selectedOutliers.push(value);
+                element.className = "outlier-btn bg-purple-100 border-2 border-purple-500 px-4 py-3 rounded-xl font-bold text-sm text-purple-800 transition";
+            }
+        }
+
+        // Mengesahkan Pilihan Murid Untuk Outliers
+        function verifyOutliers() {
+            const feedback = document.getElementById('outlier-feedback');
+            feedback.classList.remove('hidden');
+
+            // Susun data input untuk pengesahan tepat
+            const sortedSelections = [...selectedOutliers].sort((a, b) => a - b);
+            
+            // Outliers yang betul berdasarkan formula adalah -20 dan 70
+            if (sortedSelections.length === 2 && sortedSelections[0] === -20 && sortedSelections[1] === 70) {
+                triggerSynthSound('success');
+                feedback.className = "p-4 rounded-xl text-xs sm:text-sm font-semibold bg-green-50 text-green-800 border border-green-200";
+                feedback.innerHTML = `
+                    <div class="flex items-start space-x-2">
+                        <i class="fa-solid fa-circle-check text-green-600 mt-0.5"></i>
+                        <span>Syabas! -20 (kurang daripada -15) dan 70 (lebih daripada 65) dikira sebagai pencilan (outliers). (+10 XP)</span>
+                    </div>
+                `;
+                appState.isOutlierSolved = true;
+                if (appState.score < 50) {
+                    appState.score = 50;
+                }
+                unlockBadge('outlier');
+                saveState();
+                updateProgressUI();
+                executeSpeech("Fantastic! You successfully identified both outliers. Negative twenty is below our lower limit, and seventy is above our upper limit.");
+            } else {
+                triggerSynthSound('fail');
+                feedback.className = "p-4 rounded-xl text-xs sm:text-sm font-semibold bg-red-50 text-red-800 border border-red-200";
+                feedback.innerHTML = `
+                    <div class="flex items-start space-x-2">
+                        <i class="fa-solid fa-circle-exclamation text-red-600 mt-0.5"></i>
+                        <span>Pembayang: Sila periksa semula had sempadan bawah (-15) dan had atas (65). Cari nilai ekstrem yang berada di luar had ini.</span>
+                    </div>
+                `;
+                executeSpeech("Not quite right. Please check our boundaries of negative fifteen and sixty-five again. Which values fall outside these limits?");
+            }
+        }
+
+        // MODUL 6: Pengurusan Nama Pelajar
+        function saveStudentName() {
+            triggerSynthSound('click');
+            const name = document.getElementById('student-name-field').value.trim();
+            if (name === '') {
+                alert("Sila isi nama anda terlebih dahulu!");
+                return;
+            }
+            appState.studentName = name;
+            saveState();
+
+            document.getElementById('name-input-panel').classList.add('hidden');
+            document.getElementById('quiz-question-panel').classList.remove('hidden');
+            
+            showQuizQuestion();
+        }
+
+        // Sediakan Kuiz Akhir semasa Masuk Modul 6
+        function setupFinalQuiz() {
+            if (appState.studentName !== '') {
+                document.getElementById('name-input-panel').classList.add('hidden');
+                document.getElementById('quiz-question-panel').classList.remove('hidden');
+                showQuizQuestion();
+            } else {
+                document.getElementById('name-input-panel').classList.remove('hidden');
+                document.getElementById('quiz-question-panel').classList.add('hidden');
+            }
+        }
+
+        // Paparkan Soalan Kuiz Semasa
+        function showQuizQuestion() {
+            const qData = quizQuestions[currentQuizIndex];
+            document.getElementById('quiz-question-index').innerText = `Soalan ${currentQuizIndex + 1} daripada 5`;
+            document.getElementById('quiz-question-score').innerText = `Betul: ${quizScore}/${currentQuizIndex}`;
+            document.getElementById('quiz-question-text').innerText = qData.q;
+
+            const optionsContainer = document.getElementById('quiz-options-container');
+            optionsContainer.innerHTML = '';
+
+            qData.opts.forEach((opt, idx) => {
+                optionsContainer.innerHTML += `
+                    <button onclick="evaluateQuizChoice(${idx})" class="quiz-opt-btn text-left py-3.5 px-4 bg-white hover:bg-blue-50/50 border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 transition">
+                        ${opt}
+                    </button>
+                `;
+            });
+
+            document.getElementById('quiz-individual-feedback').classList.add('hidden');
+            executeSpeech(qData.q);
+        }
+
+        // Menilai Pilihan Jawapan Kuiz Murid
+        function evaluateQuizChoice(selectedIndex) {
+            const qData = quizQuestions[currentQuizIndex];
+            const feedback = document.getElementById('quiz-individual-feedback');
+            feedback.classList.remove('hidden');
+
+            // Lumpuhkan pilihan butang seketika
+            document.querySelectorAll('.quiz-opt-btn').forEach(btn => btn.disabled = true);
+
+            if (selectedIndex === qData.ans) {
+                triggerSynthSound('success');
+                quizScore++;
+                feedback.className = "p-3.5 rounded-xl text-xs font-semibold bg-green-50 text-green-800 border border-green-200";
+                feedback.innerHTML = `
+                    <div class="flex items-start space-x-1.5">
+                        <i class="fa-solid fa-circle-check text-green-600 mt-0.5"></i>
+                        <span>Tepat sekali, jawapan anda betul!</span>
+                    </div>
+                `;
+                executeSpeech("Splendid! That is correct. Keep on pushing!");
+            } else {
+                triggerSynthSound('fail');
+                feedback.className = "p-3.5 rounded-xl text-xs font-semibold bg-red-50 text-red-800 border border-red-200";
+                feedback.innerHTML = `
+                    <div class="flex items-start space-x-1.5">
+                        <i class="fa-solid fa-circle-exclamation text-red-600 mt-0.5"></i>
+                        <span>Kurang tepat. ${qData.hint}</span>
+                    </div>
+                `;
+                executeSpeech("Incorrect. Here is a helpful tip: " + qData.hint);
+            }
+
+            // Peralihan ke soalan seterusnya selepas kelewatan 3 saat
+            setTimeout(() => {
+                currentQuizIndex++;
+                if (currentQuizIndex < quizQuestions.length) {
+                    showQuizQuestion();
+                } else {
+                    concludeQuiz();
+                }
+            }, 3000);
+        }
+
+        // Menyelesaikan Kuiz & Memaparkan Sijil
+        function concludeQuiz() {
+            document.getElementById('quiz-question-panel').classList.add('hidden');
+            document.getElementById('certificate-panel').classList.remove('hidden');
+            
+            document.getElementById('cert-name').innerText = appState.studentName.toUpperCase();
+
+            // Beri ganjaran gandaan XP berdasarkan markah kuiz
+            const earnedXP = quizScore * 10;
+            if (!appState.quizCompleted) {
+                appState.score += earnedXP;
+                appState.quizCompleted = true;
+                unlockBadge('kuiz');
+                saveState();
+                updateProgressUI();
+            }
+
+            triggerConfetti();
+            executeSpeech(`Amazing job ${appState.studentName}! You successfully completed the quiz with a score of ${quizScore} out of five. Your digital certificate is ready. Brilliant work!`);
+        }
+
+        // SINTESIS AUDIO: Kesan Bunyi Melalui Web Audio API
+        function triggerSynthSound(type) {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (type === 'success') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, ctx.currentTime); 
+                    osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1); 
+                    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.35);
+                } else if (type === 'fail') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220.00, ctx.currentTime); 
+                    osc.frequency.setValueAtTime(146.83, ctx.currentTime + 0.15); 
+                    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.45);
+                } else if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(750.00, ctx.currentTime); 
+                    gain.gain.setValueAtTime(0.03, ctx.currentTime);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.05);
+                }
+            } catch (e) {
+                console.log("Audio API tidak diaktifkan pada peranti ini.");
+            }
+        }
+
+        // ENJIN KESAN CONFETTI RINGAN (HTML5 Canvas Engine)
+        function triggerConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            let particles = [];
+            for (let i = 0; i < 80; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    r: Math.random() * 5 + 3,
+                    d: Math.random() * canvas.height,
+                    color: `hsl(${Math.random() * 360}, 90%, 60%)`,
+                    vy: Math.random() * 4 + 2,
+                    vx: Math.random() * 2 - 1
+                });
+            }
+
+            let animationFrame;
+            function drawConfetti() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                let active = false;
+                
+                particles.forEach(p => {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fillStyle = p.color;
+                    ctx.fill();
+
+                    p.y += p.vy;
+                    p.x += p.vx;
+
+                    if (p.y < canvas.height) {
+                        active = true;
+                    }
+                });
+
+                if (active) {
+                    animationFrame = requestAnimationFrame(drawConfetti);
+                } else {
+                    cancelAnimationFrame(animationFrame);
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+            }
+
+            drawConfetti();
+        }
+    </script>
+</body>
+</html>
